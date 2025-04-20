@@ -1,7 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
-const connectDB = require('./config/db'); // DB connection setup
+const connectDB = require('./config/db'); // Database connection
 
 // Import routes
 const authRoutes = require('./routes/authRoutes');
@@ -14,29 +14,30 @@ const errorHandler = require('./middlewares/errorMiddleware');
 // Load environment variables
 dotenv.config();
 
-// Connect to the database
-connectDB();
-
+// Initialize app
 const app = express();
 
-// CORS configuration
+// Database connection
+connectDB();
+
+// CORS configuration to allow specific origins
 const allowedOrigins = [
-  'http://localhost:3000', // Local development
-  'https://mindfull-frontend.vercel.app', // Replace with your actual Vercel frontend URL
+  'http://localhost:3000', // Local development URL
+  'https://mind-full-nine.vercel.app', // Vercel production frontend URL
 ];
 
 app.use(cors({
   origin: function (origin, callback) {
-    // Allow requests with no origin (like Postman)
+    // Allow requests with no origin (like Postman or curl)
     if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-      callback(null, true);
+      callback(null, true); // Allow the request if the origin is allowed
     } else {
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Allowed HTTP methods
+  allowedHeaders: ['Content-Type', 'Authorization'], // Allowed headers
+  credentials: true, // Allow cookies and auth headers
 }));
 
 // Middleware to parse JSON
@@ -52,11 +53,11 @@ app.use('/api/recommendations', recommendationRoutes);
 // Error handling middleware
 app.use(errorHandler);
 
-// Root route
+// Root route for testing if the API is running
 app.get('/', (req, res) => {
   res.send('API is running...');
 });
 
-// Start server
+// Start server on port 5000 or from environment variable
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
