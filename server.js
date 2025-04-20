@@ -45,9 +45,16 @@ app.use('/api/meditations', meditationRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
+
 // Error handling middleware
 app.use(errorHandler);
+
+// Root route
+app.get('/', (req, res) => {
+  res.send('API is running...');
+});
 
 // Start server
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+
