@@ -1,12 +1,28 @@
+// routes/authRoutes.js
 const express = require('express');
-const { registerUser, loginUser, getUserProfile } = require('../controllers/authController');
-const { protect } = require('../middlewares/authMiddleware'); // Middleware to protect routes
+const { check } = require('express-validator');
+const {
+  loginUser,
+  forgotPassword,
+  resetPassword,
+} = require('../controllers/authController');
 
 const router = express.Router();
 
-// Authentication Routes
-router.post('/register', registerUser); // POST /auth/register
-router.post('/login', loginUser); // POST /auth/login
-router.get('/profile', protect, getUserProfile); // GET /auth/profile (Protected route)
-    
+// POST /api/auth/login
+router.post(
+  '/login',
+  [
+    check('email', 'Please include a valid email').isEmail(),
+    check('password', 'Password is required').exists(),
+  ],
+  loginUser
+);
+
+// POST /api/auth/forgotpassword
+router.post('/forgotpassword', forgotPassword);
+
+// PUT /api/auth/resetpassword/:resettoken
+router.put('/resetpassword/:resettoken', resetPassword);
+
 module.exports = router;
