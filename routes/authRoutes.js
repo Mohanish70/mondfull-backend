@@ -9,31 +9,31 @@ const {
 
 const router = express.Router();
 
-// POST /api/auth/register
+// Register
 router.post(
   '/register',
   [
     check('name', 'Name is required').not().isEmpty(),
-    check('email', 'Please include a valid email').isEmail(),
-    check('password', 'Password must be at least 6 characters').isLength({ min: 6 }),
+    check('email', 'Valid email required').isEmail(),
+    check('password', 'Password must be 6+ chars').isLength({ min: 6 }),
   ],
   registerUser
 );
 
-// POST /api/auth/login
+// Login
 router.post(
   '/login',
   [
-    check('email', 'Please include a valid email').isEmail(),
+    check('email', 'Valid email required').isEmail(),
     check('password', 'Password is required').exists(),
   ],
   loginUser
 );
 
-// POST /api/auth/forgotpassword
+// Forgot password
 router.post('/forgotpassword', forgotPassword);
 
-// PUT /api/auth/resetpassword/:resettoken
+// Reset password
 router.put('/resetpassword/:resettoken', resetPassword);
 
 module.exports = router;

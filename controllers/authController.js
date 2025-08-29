@@ -4,14 +4,11 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const sendEmail = require('../utils/sendEmail');
 
-// Generate JWT token
 const generateToken = (user) => {
   return jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 };
 
-// @desc    Register a new user
-// @route   POST /api/auth/register
-// @access  Public
+// Register
 exports.registerUser = async (req, res) => {
   const { name, email, password } = req.body;
 
@@ -28,20 +25,12 @@ exports.registerUser = async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
-    const user = await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
+    const user = await User.create({ name, email, password: hashedPassword });
 
     res.status(201).json({
       success: true,
       token: generateToken(user),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (err) {
     console.error('Register error:', err.message);
@@ -49,13 +38,9 @@ exports.registerUser = async (req, res) => {
   }
 };
 
-// @desc    Login user
+// Login
 exports.loginUser = async (req, res) => {
   const { email, password } = req.body;
-
-  if (!process.env.JWT_SECRET) {
-    return res.status(500).json({ success: false, message: 'Server misconfiguration' });
-  }
 
   try {
     const user = await User.findOne({ email });
@@ -71,11 +56,7 @@ exports.loginUser = async (req, res) => {
     res.json({
       success: true,
       token: generateToken(user),
-      user: {
-        id: user._id,
-        name: user.name,
-        email: user.email,
-      },
+      user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (err) {
     console.error('Login error:', err.message);
@@ -83,7 +64,7 @@ exports.loginUser = async (req, res) => {
   }
 };
 
-// @desc    Forgot password
+// Forgot password
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
 
@@ -94,26 +75,14 @@ exports.forgotPassword = async (req, res) => {
     }
 
     const resetToken = crypto.randomBytes(20).toString('hex');
-    const resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
-    const resetPasswordExpire = Date.now() + 3600000;
-
-    user.resetPasswordToken = resetPasswordToken;
-    user.resetPasswordExpire = resetPasswordExpire;
+    user.resetPasswordToken = crypto.createHash('sha256').update(resetToken).digest('hex');
+    user.resetPasswordExpire = Date.now() + 3600000; // 1 hour
     await user.save();
 
     const resetUrl = `${req.protocol}://${req.get('host')}/resetpassword/${resetToken}`;
+    const message = `Reset your password by clicking the link: ${resetUrl}`;
 
-    const message = `
-      <h1>Password Reset Request</h1>
-      <p>Click the link below to reset your password:</p>
-      <a href="${resetUrl}" target="_blank">${resetUrl}</a>
-    `;
-
-    await sendEmail({
-      to: user.email,
-      subject: 'Password Reset Request',
-      text: message,
-    });
+    await sendEmail({ to: user.email, subject: 'Password Reset', text: message });
 
     res.json({ success: true, message: 'Email sent' });
   } catch (err) {
@@ -122,15 +91,14 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-// @desc    Reset password
+// Reset password
 exports.resetPassword = async (req, res) => {
-  const { password } = req.body;
   const resetPasswordToken = crypto.createHash('sha256').update(req.params.resettoken).digest('hex');
 
   try {
     const user = await User.findOne({
       resetPasswordToken,
-      resetPasswordExpire: { $gt: Date.now() },
+      resetPasswordExpire: { $gt: Date.now() }
     });
 
     if (!user) {
@@ -138,11 +106,11 @@ exports.resetPassword = async (req, res) => {
     }
 
     const salt = await bcrypt.genSalt(10);
-    user.password = await bcrypt.hash(password, salt);
+    user.password = await bcrypt.hash(req.body.password, salt);
     user.resetPasswordToken = undefined;
     user.resetPasswordExpire = undefined;
-    await user.save();
 
+    await user.save();
     res.json({ success: true, message: 'Password updated successfully' });
   } catch (err) {
     console.error('Reset password error:', err.message);
